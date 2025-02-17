@@ -3,6 +3,12 @@
 import sys
 import json
 import struct
+import re
+
+USER_JS_FILE = "<profile_path>/user.js"
+PREFS_JS_FILE = "<profile_path>/prefs.js"
+PATTERN = re.compile("^user_pref\s*\(\s*['\"]([^'\"]*)['\"]\s*,\s*(?:['\"]([^'\"]*)['\"]|(\d+))\s*\)")
+doh_key = "network.trr.mode"
 
 # Read a message from stdin and decode it.
 def getMessage():
