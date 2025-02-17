@@ -1,34 +1,59 @@
-/*
-On startup, connect to the "ping_pong" app.
-*/
-let port = browser.runtime.connectNative("ping_pong");
 
 /*
-Listen for messages from the app and log them to the console.
+Log response of the app to the console.
 */
-port.onMessage.addListener((response) => {
+const onResponse = (response) => {
   console.log("Received: " + response);
-});
+  console.log(typeof response)
+};
+
+
+const updateIcon = (status) => {
+  console.log("Updated icon to " + status);
+  if (status) {
+    browser.browserAction.setIcon({
+      path : {48: "icons/message_on.svg"}
+    })
+  }
+  else {
+    browser.browserAction.setIcon({
+      path : {48: "icons/message_off.svg"}
+    })
+  }
+}
+const onStatusResponse = (status) => {
+  updateIcon(status)
+};
+
+const onToggleResponse = () => {
+  console.log("Restart required after DoH toggle.");
+  
+}
 
 /*
-Listen for the native messaging port closing.
+Log error of the app on exit.
 */
-port.onDisconnect.addListener((port) => {
-  if (port.error) {
-    console.log(`Disconnected due to an error: ${port.error.message}`);
-  } else {
-    // The port closed for an unspecified reason. If this occurred right after
-    // calling `browser.runtime.connectNative()` there may have been a problem
-    // starting the the native messaging client in the first place.
-    // https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Native_messaging#troubleshooting
-    console.log(`Disconnected`, port);
-  }
-});
+
+const onError = (error) => {
+    console.log(`Error: ${error}`);
+};
 
 /*
 When the extension's action icon is clicked, send the app a message.
 */
 browser.browserAction.onClicked.addListener(() => {
-  console.log("Sending:  ping");
-  port.postMessage("ping");
+  let sending = browser.runtime.sendNativeMessage("ping_pong", "toggle");
+  sending.then(onToggleResponse, onError);
+});
+
+browser.runtime.onStartup.addListener(() => {
+  // Get DNS over HTTPS status
+  let sending = browser.runtime.sendNativeMessage("ping_pong", "status");
+  sending.then(onStatusResponse, onError);
+});
+
+browser.runtime.onInstalled.addListener(() => {
+  // Get DNS over HTTPS status
+  let sending = browser.runtime.sendNativeMessage("ping_pong", "status");
+  sending.then(onStatusResponse, onError);
 });
